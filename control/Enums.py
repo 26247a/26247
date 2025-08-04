@@ -22,7 +22,7 @@ class SpeiclaClientType(Enum):
 
 class FLFramework(Enum):
     FEDAVG = "fedavg"
-    GAMAFEDAC = "GAMAFedAC"
+    MMULFED = "mmulfed"
 
 
 class FLSubType(Enum):
@@ -54,6 +54,7 @@ class ModelLoading(Enum):
 
 class DatasetName(Enum):
     HAR = "HAR"
+    UCF101 = "UCF101"
     URFALL = "URFALL"
     CMUMOSEI = "CMUMOSEI"
 
@@ -65,6 +66,7 @@ class DatasetInfo:
 
         if dataset_name in (
             DatasetName.HAR.value,
+            DatasetName.UCF101.value,
             DatasetName.URFALL.value,
             DatasetName.CMUMOSEI.value,
         ):
@@ -88,7 +90,15 @@ class DatasetInfo:
                 self.use_act_list = [
                     self.data_range_type[m] == "n1_to_p1" for m in m_set
                 ]
-
+        if dataset_name == DatasetName.UCF101.value:
+            self.dims = [2048, 160]
+            self.use_time_step_dim = 0
+            self.data_range_type = ["normal", "n1_to_p1"]
+            if m_set is not None:
+                self.input_sizes = [self.dims[m] for m in m_set]
+                self.use_act_list = [
+                    self.data_range_type[m] == "n1_to_p1" for m in m_set
+                ]
         if dataset_name == DatasetName.URFALL.value:
             self.dims = [3, 512, 8]
             self.use_time_step_dim = 1
@@ -119,7 +129,7 @@ class PurposeType(Enum):
     GENERATE_DATA = "generate_data"
 
 
-class FLEnvironment(Enum):
+class DataSplitType(Enum):
     TYPE1 = "type1"
 
     TYPE3 = "type3"
@@ -134,9 +144,17 @@ class FLEnvironment(Enum):
     HOMO012 = "homo012"
     HETERO02 = "hetero02"
     HETERO02_b = "hetero02_b"
+    HETERO02_b_SCALE = "hetero02_b_scale"
+    HETERO02_b_SCALE50 = "hetero02_b_scale50"
     HETERO01 = "hetero01"
     HETERO012 = "hetero012"
     HETERO012_b = "hetero012_b"
+    HETERO012_c = "hetero012_c"
+    HETERO012_d = "hetero012_d"
+    HETERO012_85 = "hetero012_85"
+    HETERO012_55 = "hetero012_55"
+    HETERO012_25 = "hetero012_25"
+    HETERO012_00 = "hetero012_00"
     HUM02 = "hum02"
     HUM012 = "hum012"
 
@@ -152,7 +170,7 @@ def parse_client_id(client_id: str):
     return int(a[0]), int(a[1])
 
 
-class ParametersForFLEnvironment:
+class ParametersForDataSplitType:
     def __init__(self, data_split_type: str, N_train: int = 0, N_test: int = 0):
 
         self.M_sets = None
@@ -162,13 +180,13 @@ class ParametersForFLEnvironment:
         self.client_nums_for_Dk = None
         self.client_modality_choice_idx_in_SL = None
 
-        if data_split_type == FLEnvironment.HOMO012.value:
+        if data_split_type == DataSplitType.HOMO012.value:
             self.M_sets = [(0, 1, 2)]
             self.D_len_train = [N_train]
             self.D_len_test = [N_test]
             self.client_nums_for_Dk = [10]
             self.client_modality_choice_idx_in_SL = [0]
-        elif data_split_type == FLEnvironment.HETERO012.value:
+        elif data_split_type == DataSplitType.HETERO012.value:
             self.M_sets = [
                 (0, 1, 2),
                 (0, 2),
@@ -192,7 +210,7 @@ class ParametersForFLEnvironment:
                 int(0.3 * N_test),
                 int(0.3 * N_test),
             ]
-        elif data_split_type == FLEnvironment.HETERO012_b.value:
+        elif data_split_type == DataSplitType.HETERO012_b.value:
             self.M_sets = [
                 (0, 1),
                 (0, 2),
@@ -219,7 +237,35 @@ class ParametersForFLEnvironment:
                 int(0.6 * N_test),
                 int(0.6 * N_test),
             ]
-        elif data_split_type == FLEnvironment.TYPE3.value:
+
+        elif data_split_type == DataSplitType.HETERO012_d.value:
+            self.M_sets = [
+                (0, 1),
+                (0, 2),
+                (1, 2),
+                (0,),
+                (1,),
+                (2,),
+            ]
+            self.client_nums_for_Dk = [1, 1, 1, 8, 8, 8]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0, 0, 0, 0]
+            self.D_len_train = [
+                int(0.1 * N_train),
+                int(0.1 * N_train),
+                int(0.1 * N_train),
+                int(0.8 * N_train),
+                int(0.8 * N_train),
+                int(0.8 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.1 * N_test),
+                int(0.1 * N_test),
+                int(0.1 * N_test),
+                int(0.8 * N_test),
+                int(0.8 * N_test),
+                int(0.8 * N_test),
+            ]
+        elif data_split_type == DataSplitType.TYPE3.value:
             self.M_sets = [(0, 2), (0,), (2,)]
             self.client_nums_for_Dk = [1, 1, 1]
             self.client_modality_choice_idx_in_SL = [0, 0, 0]
@@ -233,7 +279,7 @@ class ParametersForFLEnvironment:
                 int(0.5 * N_test),
                 int(0.5 * N_test),
             ]
-        elif data_split_type == FLEnvironment.TYPE4.value:
+        elif data_split_type == DataSplitType.TYPE4.value:
             self.M_sets = [(0, 2)]
             self.client_nums_for_Dk = [3]
             self.client_modality_choice_idx_in_SL = [0]
@@ -243,7 +289,7 @@ class ParametersForFLEnvironment:
             self.D_len_test = [
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.TYPE5.value:
+        elif data_split_type == DataSplitType.TYPE5.value:
             self.M_sets = [(0, 1)]
             self.client_nums_for_Dk = [1]
             self.client_modality_choice_idx_in_SL = [0]
@@ -253,7 +299,7 @@ class ParametersForFLEnvironment:
             self.D_len_test = [
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.SINGLE02.value:
+        elif data_split_type == DataSplitType.SINGLE02.value:
             self.M_sets = [(0, 2)]
             self.client_nums_for_Dk = [1]
             self.client_modality_choice_idx_in_SL = [0]
@@ -263,19 +309,19 @@ class ParametersForFLEnvironment:
             self.D_len_test = [
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.HOMO02.value:
+        elif data_split_type == DataSplitType.HOMO02.value:
             self.M_sets = [(0, 2)]
             self.client_nums_for_Dk = [10]
             self.client_modality_choice_idx_in_SL = [0]
             self.D_len_train = [N_train]
             self.D_len_test = [N_test]
-        elif data_split_type == FLEnvironment.HOMO01.value:
+        elif data_split_type == DataSplitType.HOMO01.value:
             self.M_sets = [(0, 1)]
             self.client_nums_for_Dk = [10]
             self.client_modality_choice_idx_in_SL = [0]
             self.D_len_train = [N_train]
             self.D_len_test = [N_test]
-        elif data_split_type == FLEnvironment.HETERO02.value:
+        elif data_split_type == DataSplitType.HETERO02.value:
             self.M_sets = [(0, 2), (0,), (2,)]
             self.client_nums_for_Dk = [5, 5, 5]
             self.client_modality_choice_idx_in_SL = [0, 0, 0]
@@ -289,7 +335,7 @@ class ParametersForFLEnvironment:
                 int(0.5 * N_test),
                 int(0.5 * N_test),
             ]
-        elif data_split_type == FLEnvironment.HUM02.value:
+        elif data_split_type == DataSplitType.HUM02.value:
             self.M_sets = [(0,), (2,)]
             self.client_nums_for_Dk = [1, 1]
             self.client_modality_choice_idx_in_SL = [0, 0]
@@ -301,7 +347,7 @@ class ParametersForFLEnvironment:
                 int(N_test),
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.HUM012.value:
+        elif data_split_type == DataSplitType.HUM012.value:
             self.M_sets = [(0,), (1,), (2,)]
             self.client_nums_for_Dk = [1, 1, 1]
             self.client_modality_choice_idx_in_SL = [0, 0, 0]
@@ -315,7 +361,7 @@ class ParametersForFLEnvironment:
                 int(N_test),
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.HETERO02_b.value:
+        elif data_split_type == DataSplitType.HETERO02_b.value:
             self.M_sets = [(0, 2), (0,), (2,)]
             self.client_nums_for_Dk = [1, 9, 9]
             self.client_modality_choice_idx_in_SL = [0, 0, 0]
@@ -329,7 +375,101 @@ class ParametersForFLEnvironment:
                 int(0.9 * N_test),
                 int(0.9 * N_test),
             ]
-        elif data_split_type == FLEnvironment.HETERO01.value:
+
+        elif data_split_type == DataSplitType.HETERO012_85.value:
+            self.M_sets = [(0, 1, 2), (0,), (1,), (2,)]
+            self.client_nums_for_Dk = [4, 3, 3, 3]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0, 0]
+            self.D_len_train = [
+                int(0.85 * N_train),
+                int(0.15 * N_train),
+                int(0.15 * N_train),
+                int(0.15 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.85 * N_test),
+                int(0.15 * N_test),
+                int(0.15 * N_test),
+                int(0.15 * N_test),
+            ]
+
+        elif data_split_type == DataSplitType.HETERO012_55.value:
+            self.M_sets = [(0, 1, 2), (0,), (1,), (2,)]
+            self.client_nums_for_Dk = [4, 3, 3, 3]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0, 0]
+            self.D_len_train = [
+                int(0.55 * N_train),
+                int(0.45 * N_train),
+                int(0.45 * N_train),
+                int(0.45 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.55 * N_test),
+                int(0.45 * N_test),
+                int(0.45 * N_test),
+                int(0.45 * N_test),
+            ]
+
+        elif data_split_type == DataSplitType.HETERO012_25.value:
+            self.M_sets = [(0, 1, 2), (0,), (1,), (2,)]
+            self.client_nums_for_Dk = [4, 3, 3, 3]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0, 0]
+            self.D_len_train = [
+                int(0.25 * N_train),
+                int(0.75 * N_train),
+                int(0.75 * N_train),
+                int(0.75 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.25 * N_test),
+                int(0.75 * N_test),
+                int(0.75 * N_test),
+                int(0.75 * N_test),
+            ]
+        elif data_split_type == DataSplitType.HETERO012_00.value:
+            self.M_sets = [(0,), (1,), (2,)]
+            self.client_nums_for_Dk = [3, 3, 3]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0]
+            self.D_len_train = [
+                int(1 * N_train),
+                int(1 * N_train),
+                int(1 * N_train),
+            ]
+            self.D_len_test = [
+                int(1 * N_test),
+                int(1 * N_test),
+                int(1 * N_test),
+            ]
+
+        elif data_split_type == DataSplitType.HETERO02_b_SCALE50.value:
+            self.M_sets = [(0, 2), (0,), (2,)]
+            self.client_nums_for_Dk = [50, 450, 450]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0]
+            self.D_len_train = [
+                int(0.1 * N_train),
+                int(0.9 * N_train),
+                int(0.9 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.1 * N_test),
+                int(0.9 * N_test),
+                int(0.9 * N_test),
+            ]
+        elif data_split_type == DataSplitType.HETERO02_b_SCALE.value:
+            self.M_sets = [(0, 2), (0,), (2,)]
+            self.client_nums_for_Dk = [100, 900, 900]
+            self.client_modality_choice_idx_in_SL = [0, 0, 0]
+            self.D_len_train = [
+                int(0.1 * N_train),
+                int(0.9 * N_train),
+                int(0.9 * N_train),
+            ]
+            self.D_len_test = [
+                int(0.1 * N_test),
+                int(0.9 * N_test),
+                int(0.9 * N_test),
+            ]
+        elif data_split_type == DataSplitType.HETERO01.value:
             self.M_sets = [(0, 1), (0,), (1,)]
             self.client_nums_for_Dk = [5, 5, 5]
             self.client_modality_choice_idx_in_SL = [0, 0, 0]
@@ -343,7 +483,7 @@ class ParametersForFLEnvironment:
                 int(0.5 * N_test),
                 int(0.5 * N_test),
             ]
-        elif data_split_type == FLEnvironment.SINGLE01.value:
+        elif data_split_type == DataSplitType.SINGLE01.value:
             self.M_sets = [(0, 1)]
             self.client_nums_for_Dk = [1]
             self.client_modality_choice_idx_in_SL = [0]
@@ -353,7 +493,7 @@ class ParametersForFLEnvironment:
             self.D_len_test = [
                 int(N_test),
             ]
-        elif data_split_type == FLEnvironment.SINGLE012.value:
+        elif data_split_type == DataSplitType.SINGLE012.value:
             self.M_sets = [(0, 1, 2)]
             self.client_nums_for_Dk = [1]
             self.client_modality_choice_idx_in_SL = [0]
